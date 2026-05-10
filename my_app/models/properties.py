@@ -26,7 +26,7 @@ class Property(models.Model):
 
     type = models.CharField(
         max_length=20,
-        choices=Type.choices,
+        choices=Type,
     )
 
     is_active = models.BooleanField(default=True)
