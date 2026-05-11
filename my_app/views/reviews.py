@@ -1,0 +1,48 @@
+from __future__ import annotations
+
+from rest_framework import mixins, viewsets
+from rest_framework.permissions import AllowAny, IsAuthenticated
+
+from my_app.models import Review
+from permissions import IsOwnerOrReadOnly
+from my_app.serializers import ReviewReadSerializer, ReviewWriteSerializer
+
+
+class ReviewViewSet(
+    mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet,
+):
+    """
+    list    GET  /properties/{property_pk}/reviews/     — all reviews (AllowAny)
+    create  POST /properties/{property_pk}/reviews/     — create review (IsAuthenticated)
+    update  PATCH /properties/{property_pk}/reviews/{id}/ — own review only
+    destroy DELETE /properties/{property_pk}/reviews/{id}/ — own review only
+    """
+
+    def get_queryset(self):
+        return (
+            Review.objects.select_related("user", "property")
+            .filter(property_id=self.kwargs["property_pk"])
+            .order_by("-created_at")
+        )
+
+    def get_serializer_class(self):
+        if self.action in ("create", "update", "partial_update"):
+            return ReviewWriteSerializer
+        return ReviewReadSerializer
+
+    def get_permissions(self):
+        if self.action == "list":
+            return [AllowAny()]
+        if self.action == "create":
+            return [IsAuthenticated()]
+        # update, destroy — author only
+        return [IsAuthenticated(), IsOwnerOrReadOnly()]
+
+    def perform_create(self, serializer):
+        from ..models import Property
+        prop = Property.objects.get(pk=self.kwargs["property_pk"])
+        serializer.save(user=self.request.user, property=prop)
