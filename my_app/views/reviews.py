@@ -4,7 +4,7 @@ from rest_framework import mixins, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from my_app.models import Review
-from permissions import IsOwnerOrReadOnly
+from my_app.permissions import IsOwnerOrReadOnly
 from my_app.serializers import ReviewReadSerializer, ReviewWriteSerializer
 
 

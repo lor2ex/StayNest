@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from my_app.models import Booking
-from permissions import IsBookingParticipant, IsPropertyOwnerForBooking
+from my_app.permissions import IsBookingParticipant, IsPropertyOwnerForBooking
 from my_app.serializers import (
     BookingCreateSerializer,
     BookingReadSerializer,

@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
 from my_app.models import Property, PropertyView, SearchQuery
-from permissions import IsLandlord, IsLandlordOwner
+from my_app.permissions import IsLandlord, IsLandlordOwner
 from my_app.serializers import (
     PropertyAvailabilitySerializer,
     PropertyDetailSerializer,
