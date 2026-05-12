@@ -3,8 +3,9 @@ from __future__ import annotations
 from django.utils import timezone
 from rest_framework import serializers
 
-from models import Booking, Property, PropertyView, Review, SearchQuery
-from serializers import UserPublicSerializer, PropertyListSerializer
+from my_app.models import Booking, Property
+from my_app.serializers.auth import UserPublicSerializer
+from my_app.serializers.properties import PropertyListSerializer
 
 
 class BookingReadSerializer(serializers.ModelSerializer):

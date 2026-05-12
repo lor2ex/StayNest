@@ -3,7 +3,7 @@ from __future__ import annotations
 from rest_framework import serializers
 
 from my_app.models import Property
-from serializers import UserPublicSerializer
+from my_app.serializers.auth import UserPublicSerializer
 
 
 class PropertyListSerializer(serializers.ModelSerializer):

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
-from models import PropertyView, SearchQuery
-from serializers import PropertyListSerializer
+from my_app.models import PropertyView, SearchQuery
+from my_app.serializers.properties import PropertyListSerializer
 
 
 class PropertyViewSerializer(serializers.ModelSerializer):

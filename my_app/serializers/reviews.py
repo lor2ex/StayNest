@@ -2,8 +2,8 @@ from django.utils import timezone
 from rest_framework import serializers
 from django.db import IntegrityError
 
-from models import Booking, Property, Review
-from serializers import UserPublicSerializer
+from my_app.models import Booking, Property, Review
+from my_app.serializers.auth import UserPublicSerializer
 
 
 class ReviewReadSerializer(serializers.ModelSerializer):
