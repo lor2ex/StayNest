@@ -18,6 +18,7 @@ class PropertyListSerializer(serializers.ModelSerializer):
             "id",
             "owner",
             "title",
+            "description",
             "city",
             "district",
             "price",

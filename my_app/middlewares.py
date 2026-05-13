@@ -13,6 +13,7 @@ class JWTMiddleware:
     excluded_paths = {
         "/auth/login/",
         "/auth/register/",
+        "/auth/logout/",
         "/auth/token/refresh/",
     }
 

@@ -33,7 +33,7 @@ def set_access_cookie(response: HttpResponse, access_token: str) -> None:
 
     response.set_cookie(
         key=ACCESS_COOKIE_NAME,
-        value=str(token),
+        value=token,
         **build_cookie_kwargs(get_token_expiry_datetime(token))
     )
 

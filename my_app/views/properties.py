@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from django.db.models import Avg, Count, F, Q
 from django.utils import timezone
-from rest_framework import filters, viewsets
+from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
-from my_app.models import Property, PropertyView, SearchQuery
+from my_app.models import Booking, Property, PropertyView, SearchQuery
 from my_app.permissions import IsLandlord, IsLandlordOwner
 from my_app.serializers import (
     PropertyAvailabilitySerializer,
@@ -17,15 +18,18 @@ from my_app.serializers import (
     PropertyWriteSerializer,
 )
 
+# Statuses that block deletion — listing has "live" bookings
+_ACTIVE_BOOKING_STATUSES = (Booking.Status.PENDING, Booking.Status.CONFIRMED)
+
 
 class PropertyViewSet(viewsets.ModelViewSet):
     """
-    list   GET  /properties/          — list of active listings
-    create POST /properties/          — create (landlord only)
-    retrieve GET /properties/{id}/    — detail view + view counter
-    update  PUT/PATCH /properties/{id}/ — edit (own listings only)
-    destroy DELETE /properties/{id}/  — delete (own listings only)
-    toggle  PATCH /properties/{id}/toggle/ — toggle listing on/off
+    list     GET  /properties/           — list of active listings
+    create   POST /properties/           — create (landlord only)
+    retrieve GET  /properties/{id}/      — detail view + view counter
+    update   PUT/PATCH /properties/{id}/ — edit (own listings only)
+    destroy  DELETE /properties/{id}/    — delete (own listings only, no active bookings)
+    toggle   PATCH /properties/{id}/toggle/ — toggle listing on/off
 
     Filtering: city, district, type, is_active
     Ranges:    price_min, price_max, rooms_min, rooms_max
@@ -95,6 +99,23 @@ class PropertyViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
+    def perform_destroy(self, instance):
+        """
+        Block deletion if there are PENDING or CONFIRMED bookings on this listing.
+        Safe to delete only when all bookings are REJECTED or CANCELLED.
+        """
+        has_active_bookings = instance.bookings.filter(
+            status__in=_ACTIVE_BOOKING_STATUSES
+        ).exists()
+
+        if has_active_bookings:
+            raise ValidationError(
+                "Cannot delete a listing with active bookings. "
+                "Cancel or reject all bookings first."
+            )
+
+        instance.delete()
+
     def retrieve(self, request, *args, **kwargs):
         """
         Detail view of a listing.
@@ -151,4 +172,23 @@ class PropertyViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        return Response(serializer.data)
+
+    @action(detail=False, methods=["get"], url_path="my", permission_classes=[IsLandlord])
+    def my_properties(self, request):
+        """GET /properties/my/ — all listings by the current landlord (including inactive ones)."""
+        qs = (
+            Property.objects.filter(owner=request.user)
+            .annotate(
+                avg_rating=Avg("reviews__rating"),
+                reviews_count=Count("reviews"),
+            )
+            .order_by("-date_created")
+        )
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = PropertyListSerializer(page, many=True, context={"request": request})
+            return self.get_paginated_response(serializer.data)
+
+        serializer = PropertyListSerializer(qs, many=True, context={"request": request})
         return Response(serializer.data)
