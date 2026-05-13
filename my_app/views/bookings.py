@@ -46,8 +46,14 @@ class BookingViewSet(
             # Booking participants (checked at object permission level)
             return qs
 
-        # list — each user sees only their own bookings
-        return qs.filter(user=user)
+        # list — свои брони + фильтр по статусу если передан
+        qs = qs.filter(user=user)
+
+        status_filter = self.request.query_params.get("status", "").lower()
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+
+        return qs
 
     def get_serializer_class(self):
         if self.action == "create":
