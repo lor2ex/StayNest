@@ -88,25 +88,36 @@ class BookingStatusSerializer(serializers.ModelSerializer):
     def validate_status(self, value: str) -> str:
         instance: Booking = self.instance
         request_user = self.context["request"].user
+        is_landlord = request_user.role == "landlord"
+        is_tenant = request_user == instance.user
 
-        allowed_transitions: dict[str, set[str]] = {
-            Booking.Status.PENDING: {
-                Booking.Status.CONFIRMED,
-                Booking.Status.REJECTED,
-            },
-            Booking.Status.CONFIRMED: {Booking.Status.CANCELLED},
-        }
+        # Role-based transition matrix
+        allowed_transitions: dict[str, set[str]] = {}
+
+        if is_landlord:
+            allowed_transitions = {
+                Booking.Status.PENDING: {
+                    Booking.Status.CONFIRMED,
+                    Booking.Status.REJECTED,
+                },
+            }
+        elif is_tenant:
+            allowed_transitions = {
+                Booking.Status.PENDING: {Booking.Status.CANCELLED},
+                Booking.Status.CONFIRMED: {Booking.Status.CANCELLED},
+            }
 
         if instance.status not in allowed_transitions:
             raise serializers.ValidationError(
-                f"Cannot change status from \"{instance.status}\"."
+                f"Cannot change status from \"{instance.status}\" with your role."
             )
         if value not in allowed_transitions[instance.status]:
             raise serializers.ValidationError(
                 f"Transition \"{instance.status}\" → \"{value}\" is not allowed."
             )
 
-        if value == Booking.Status.CANCELLED and request_user == instance.user:
+        # Tenant cannot cancel less than 1 day before check-out
+        if value == Booking.Status.CANCELLED and is_tenant:
             delta = instance.check_out - timezone.localdate()
             if delta.days <= 1:
                 raise serializers.ValidationError(
