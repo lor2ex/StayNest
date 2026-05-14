@@ -17,12 +17,12 @@ class ReviewReadSerializer(serializers.ModelSerializer):
 class ReviewWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
-        fields = ("id", "property", "rating", "comment")
+        fields = ("id", "rating", "comment")
         read_only_fields = ("id",)
 
     def validate(self, attrs: dict) -> dict:
         user = self.context["request"].user
-        prop: Property = attrs.get("property", getattr(self.instance, "property", None))
+        prop: Property = self.context["property"]
 
         has_valid_stay = Booking.objects.filter(
             user=user,
@@ -40,6 +40,7 @@ class ReviewWriteSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data: dict) -> Review:
         validated_data["user"] = self.context["request"].user
+        validated_data["property"] = self.context["property"]
         try:
             return super().create(validated_data)
         except IntegrityError:

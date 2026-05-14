@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from rest_framework import mixins, viewsets
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
+from my_app.models import Property
 from my_app.models import Review
 from my_app.permissions import IsOwnerOrReadOnly
 from my_app.serializers import ReviewReadSerializer, ReviewWriteSerializer
@@ -41,6 +43,11 @@ class ReviewViewSet(
             return [IsAuthenticated()]
         # update, destroy — author only
         return [IsAuthenticated(), IsOwnerOrReadOnly()]
+
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx["property"] = get_object_or_404(Property, pk=self.kwargs["property_pk"])
+        return ctx
 
     def perform_create(self, serializer):
         from ..models import Property
