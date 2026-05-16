@@ -11,11 +11,13 @@ djangorestframework==3.16.1
 djangorestframework-stubs==3.16.8
 djangorestframework_simplejwt==5.5.1
 drf-spectacular==0.29.0
+gunicorn==26.0.0
 inflection==0.5.1
 jmespath==1.1.0
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
 mysqlclient==2.2.8
+packaging==26.2
 pillow==12.1.1
 PyJWT==2.12.1
 python-dateutil==2.9.0.post0
