@@ -45,6 +45,7 @@ COPY --from=builder /opt/venv /opt/venv
 COPY --chown=app:app manage.py ./
 COPY --chown=app:app config ./config
 COPY --chown=app:app my_app ./my_app
+# COPY --chown=app:app templates ./templates
 
 USER app
 
