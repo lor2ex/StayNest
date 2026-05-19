@@ -44,7 +44,8 @@ class User(AbstractUser):
     def delete(self, using=None, keep_parents=False):
         self.deleted = True
         self.deleted_at = timezone.now()
-        self.save()
+        self.is_active = False
+        self.save(update_fields=["deleted", "deleted_at", "is_active"])
 
     class Meta:
         db_table = "users"

@@ -69,7 +69,7 @@ AUTH_USER_MODEL = 'my_app.User'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -133,6 +133,12 @@ REST_FRAMEWORK = {
 }
 
 
+_SPECTACULAR_SERVE_PERMISSIONS = (
+    ["rest_framework.permissions.AllowAny"]
+    if DEBUG
+    else ["rest_framework.permissions.IsAdminUser"]
+)
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "StayNest API",
     "DESCRIPTION": (
@@ -142,11 +148,7 @@ SPECTACULAR_SETTINGS = {
     "OAS_VERSION": "3.0.3",
     "SERVE_INCLUDE_SCHEMA": False,
     "SERVE_PUBLIC": False,
-    "SERVE_PERMISSIONS": [
-    "rest_framework.permissions.AllowAny"
-    if DEBUG else
-    "rest_framework.permissions.IsAdminUser"
-    ],
+    "SERVE_PERMISSIONS": _SPECTACULAR_SERVE_PERMISSIONS,
     "SERVE_AUTHENTICATION": [
         "rest_framework.authentication.SessionAuthentication",
     ],
@@ -179,7 +181,7 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=180),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': False,
+    'BLACKLIST_AFTER_ROTATION': True,
     'BLACKLIST_ENABLED': True,
     'JTI_CLAIM': "jti",
     'ALGORITHM': 'HS256',

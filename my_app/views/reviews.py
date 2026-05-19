@@ -50,6 +50,5 @@ class ReviewViewSet(
         return ctx
 
     def perform_create(self, serializer):
-        from ..models import Property
-        prop = Property.objects.get(pk=self.kwargs["property_pk"])
+        prop = self.get_serializer_context()["property"]
         serializer.save(user=self.request.user, property=prop)

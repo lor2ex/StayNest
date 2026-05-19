@@ -28,7 +28,7 @@ class ReviewWriteSerializer(serializers.ModelSerializer):
             user=user,
             property=prop,
             status=Booking.Status.CONFIRMED,
-            check_in__lte=timezone.localdate(),
+            check_out__lte=timezone.localdate(),
         ).exists()
 
         if not has_valid_stay:
