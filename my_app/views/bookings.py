@@ -82,12 +82,14 @@ class BookingViewSet(
         check_in = serializer.validated_data["check_in"]
         check_out = serializer.validated_data["check_out"]
 
-        # Lock rows for the duration of the transaction
-        Booking.objects.select_for_update().filter(
-            property=prop,
-            status__in=(Booking.Status.PENDING, Booking.Status.CONFIRMED),
-            check_in__lt=check_out,
-            check_out__gt=check_in,
+        # Lock rows for the duration of the transaction — must evaluate the queryset
+        list(
+            Booking.objects.select_for_update().filter(
+                property=prop,
+                status__in=(Booking.Status.PENDING, Booking.Status.CONFIRMED),
+                check_in__lt=check_out,
+                check_out__gt=check_in,
+            )
         )
 
         serializer.save()
@@ -95,7 +97,6 @@ class BookingViewSet(
 
     @action(detail=True, methods=["patch"], url_path="status")
     def update_status(self, request, pk=None):
-        # Possible target statuses: CONFIRMED, REJECTED (landlord) / CANCELLED (tenant)
         """
         PATCH /bookings/{id}/status/
         - Landlord: pending → confirmed | rejected
@@ -109,8 +110,6 @@ class BookingViewSet(
             Booking.Status.CONFIRMED,
             Booking.Status.REJECTED,
         ):
-            self.check_object_permissions(request, booking)
-            # Reuse permission
             perm = IsPropertyOwnerForBooking()
             if not perm.has_object_permission(request, self, booking):
                 return Response(
@@ -141,6 +140,11 @@ class BookingViewSet(
         status_filter = request.query_params.get("status")
         if status_filter:
             qs = qs.filter(status=status_filter)
+
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = BookingReadSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
         serializer = BookingReadSerializer(qs, many=True)
         return Response(serializer.data)
