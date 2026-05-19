@@ -1,10 +1,12 @@
 from datetime import datetime, timezone
 
+from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from config import settings
-from my_app.models import User
+
+User = get_user_model()
 
 ACCESS_COOKIE_NAME = "access_token"
 REFRESH_COOKIE_NAME = "refresh_token"
@@ -33,7 +35,7 @@ def set_access_cookie(response: HttpResponse, access_token: str) -> None:
 
     response.set_cookie(
         key=ACCESS_COOKIE_NAME,
-        value=token,
+        value=str(token),
         **build_cookie_kwargs(get_token_expiry_datetime(token))
     )
 
@@ -43,7 +45,7 @@ def set_refresh_cookie(response: HttpResponse, refresh_token: str) -> None:
 
     response.set_cookie(
         key=REFRESH_COOKIE_NAME,
-        value=token,
+        value=str(token),
         **build_cookie_kwargs(get_token_expiry_datetime(token))
     )
 
