@@ -91,6 +91,12 @@ class BookingStatusSerializer(serializers.ModelSerializer):
         is_landlord = request_user.role == "landlord"
         is_tenant = request_user == instance.user
 
+        # A landlord can only act on bookings for their own properties
+        if is_landlord and instance.property.owner_id != request_user.pk:
+            raise serializers.ValidationError(
+                "You can only manage bookings for your own properties."
+            )
+
         # Role-based transition matrix
         allowed_transitions: dict[str, set[str]] = {}
 
