@@ -3,6 +3,7 @@ from __future__ import annotations
 from django.db import transaction
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -13,6 +14,8 @@ from my_app.serializers import (
     BookingReadSerializer,
     BookingStatusSerializer,
 )
+
+_VALID_BOOKING_STATUSES = {s.value for s in Booking.Status}
 
 
 class BookingViewSet(
@@ -51,6 +54,10 @@ class BookingViewSet(
 
         status_filter = self.request.query_params.get("status", "").lower()
         if status_filter:
+            if status_filter not in _VALID_BOOKING_STATUSES:
+                raise ValidationError(
+                    {"status": f"Invalid status. Choose from: {', '.join(sorted(_VALID_BOOKING_STATUSES))}."}
+                )
             qs = qs.filter(status=status_filter)
 
         return qs
@@ -139,6 +146,12 @@ class BookingViewSet(
         qs = self.get_queryset()
         status_filter = request.query_params.get("status")
         if status_filter:
+            status_filter = status_filter.lower()
+            if status_filter not in _VALID_BOOKING_STATUSES:
+                return Response(
+                    {"status": f"Invalid status. Choose from: {', '.join(sorted(_VALID_BOOKING_STATUSES))}."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             qs = qs.filter(status=status_filter)
 
         page = self.paginate_queryset(qs)

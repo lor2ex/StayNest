@@ -215,15 +215,19 @@ LOGGING = {
             'level': 'INFO',
         },
         'http_file': {
-            'class': 'logging.FileHandler',
+            'class': 'logging.handlers.RotatingFileHandler',
             'filename': LOGS_DIR / 'http_logs.log',
+            'maxBytes': 5 * 1024 * 1024,  # 5 MB
+            'backupCount': 5,
             'formatter': 'verbose',
             'level': 'INFO',
             'encoding': 'utf-8',
         },
         'db_file': {
-            'class': 'logging.FileHandler',
+            'class': 'logging.handlers.RotatingFileHandler',
             'filename': LOGS_DIR / 'db_logs.log',
+            'maxBytes': 5 * 1024 * 1024,  # 5 MB
+            'backupCount': 5,
             'formatter': 'sql',
             'level': 'DEBUG',
             'encoding': 'utf-8',

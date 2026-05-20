@@ -85,6 +85,8 @@ class PropertyWriteSerializer(serializers.ModelSerializer):
         return value
 
     def validate_rooms(self, value):
+        if not isinstance(value, int):
+            raise serializers.ValidationError("Number of rooms must be a whole number.")
         if value <= 0:
             raise serializers.ValidationError("Number of rooms must be at least 1.")
         return value

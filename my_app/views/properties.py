@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from decimal import Decimal, InvalidOperation
+
 from django.db.models import Avg, Count, F, Q
 from django.utils import timezone
 from rest_framework import filters, status, viewsets
@@ -20,6 +22,28 @@ from my_app.serializers import (
 
 # Statuses that block deletion — listing has "live" bookings
 _ACTIVE_BOOKING_STATUSES = (Booking.Status.PENDING, Booking.Status.CONFIRMED)
+
+
+def _parse_positive_decimal(param: str, raw: str) -> Decimal:
+    """Parse a query param as a positive Decimal or raise ValidationError."""
+    try:
+        value = Decimal(raw)
+    except InvalidOperation:
+        raise ValidationError(f"'{param}' must be a valid number.")
+    if value <= 0:
+        raise ValidationError(f"'{param}' must be greater than zero.")
+    return value
+
+
+def _parse_positive_int(param: str, raw: str) -> int:
+    """Parse a query param as a positive integer or raise ValidationError."""
+    try:
+        value = int(raw)
+    except (ValueError, TypeError):
+        raise ValidationError(f"'{param}' must be a whole number.")
+    if value <= 0:
+        raise ValidationError(f"'{param}' must be at least 1.")
+    return value
 
 
 class PropertyViewSet(viewsets.ModelViewSet):
@@ -66,16 +90,45 @@ class PropertyViewSet(viewsets.ModelViewSet):
             # Landlords see all active listings + their own inactive ones in the list
             qs = qs.filter(Q(is_active=True) | Q(owner=user))
 
-        # Range filters
+        # Range filters — validate numeric inputs before passing to ORM
         params = self.request.query_params
-        if price_min := params.get("price_min"):
-            qs = qs.filter(price__gte=price_min)
-        if price_max := params.get("price_max"):
-            qs = qs.filter(price__lte=price_max)
-        if rooms_min := params.get("rooms_min"):
-            qs = qs.filter(rooms__gte=rooms_min)
-        if rooms_max := params.get("rooms_max"):
-            qs = qs.filter(rooms__lte=rooms_max)
+        errors = {}
+
+        price_min = params.get("price_min")
+        price_max = params.get("price_max")
+        rooms_min = params.get("rooms_min")
+        rooms_max = params.get("rooms_max")
+
+        try:
+            if price_min is not None:
+                price_min = _parse_positive_decimal("price_min", price_min)
+                qs = qs.filter(price__gte=price_min)
+        except ValidationError as e:
+            errors["price_min"] = e.detail
+
+        try:
+            if price_max is not None:
+                price_max = _parse_positive_decimal("price_max", price_max)
+                qs = qs.filter(price__lte=price_max)
+        except ValidationError as e:
+            errors["price_max"] = e.detail
+
+        try:
+            if rooms_min is not None:
+                rooms_min = _parse_positive_int("rooms_min", rooms_min)
+                qs = qs.filter(rooms__gte=rooms_min)
+        except ValidationError as e:
+            errors["rooms_min"] = e.detail
+
+        try:
+            if rooms_max is not None:
+                rooms_max = _parse_positive_int("rooms_max", rooms_max)
+                qs = qs.filter(rooms__lte=rooms_max)
+        except ValidationError as e:
+            errors["rooms_max"] = e.detail
+
+        if errors:
+            raise ValidationError(errors)
 
         return qs
 
