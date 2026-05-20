@@ -44,10 +44,8 @@ class LoginView(APIView):
         except TokenError as e:
             raise InvalidToken(e.args[0])
 
-        # serializer.validated_data contains access+refresh — we only need them
-        # to retrieve the user; tokens are NOT returned in the body
-        email = request.data.get("email", "").strip().lower()
-        user = User.objects.get(email=email)
+        # serializer.user is already populated after successful validation
+        user = serializer.user
 
         response = Response(
             {
